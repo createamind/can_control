@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     short spd = (short)(haval->read_obstacle_info_from_sensor());
     msg.data = spd;
     pub.publish(msg);
-    
+
     update_car_state();
     haval->send_vehicle_control(speed_limit, throttle, brake, steer);
     ros::spinOnce();
@@ -239,10 +239,10 @@ int Vehicle::read_obstacle_info_from_sensor()
                 {
                     printf(" %.2X", rec[j].Data[i]);
                 }
+                speed = (unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7]);
+                printf("speed = %d", speed);
+                return (int)speed;
             }
-            speed = (unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7]);
-            printf("speed = %d", speed);
-            return (int)speed;
         }
     }
 }

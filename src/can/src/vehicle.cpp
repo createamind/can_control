@@ -10,19 +10,77 @@
 #include "controlcan.h"
 
 
-
 Vehicle * haval = new Vehicle;
 
 int cod = 0;
 int cnt = 0;
-void decode(int cod){
 
-}
+float speed_limit = 10; // KM/h
+int throttle = 0; //0 or 1
+float brake = 0; //MPa
+float steer = 0; //Deg
+
+
 void chatterCallback(const std_msgs::Int16::ConstPtr& msg)
 {
-  cod = (int)(msg->data);
-  cnt = 0;
+    cod = (int)(msg->data);
+    cnt = 0;
 }
+
+void update_car_state(){
+
+    if(cod == 9){
+        speed_limit -= 1.0 / 100;
+        if(speed_limit < 5){
+            speed_limit = 5;
+        }
+        // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
+    }
+    if(cod == 10){
+        speed_limit += 1.0 / 100;
+        if(speed_limit > 20){
+            speed_limit = 20;
+        }
+        // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
+    }
+
+    // Throttle
+    if(cod == 1 || cod == 2 || cod == 3){
+        throttle = 1;
+    }
+    else{
+        throttle = 0;
+    }
+
+    if(cod == 6 || cod == 7 || cod == 8){
+        brake += 0.8 / 100;
+        if(brake > 3.2){
+            brake = 3.2;
+        }
+    }
+    else{
+        brake = 0;
+    }
+
+
+    if(cod == 1 || cod == 4 || cod == 6){
+        steer += 60.0 / 100;
+    }
+    else{
+        if(steer > 0)
+            steer -= 60.0 / 100;
+    }
+
+    if(cod == 3 || cod == 5 || cod == 8){
+        steer -= 60.0 / 100;
+    }
+    else{
+        if(steer < 0){
+            steer += 60.0 / 100;
+        }
+    }
+}
+
 
 int main(int argc, char **argv)
 {
@@ -31,20 +89,30 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
 
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(100);
 
   ros::Subscriber sub = n.subscribe("/control", 1, chatterCallback);
-  
+  ros::Publisher pub = n.advertise<std_msgs::Int16>("/speed", 1);
+
   haval->can_open();
   haval->can_start(1);
 
   while (ros::ok())
   {
-    cnt ++;
-    if(cnt > 10)
+    // ROS_INFO("Now code: [%d]", cod);
+    cnt += 1;
+    if(cnt > 100){
         cod = 0;
-    ROS_INFO("Now code: [%d]", cod);
-    haval->send_vehicle_steer(cod);
+    }
+
+    std_msgs::Int16 msg;
+
+    short spd = (short)(haval->read_obstacle_info_from_sensor());
+    msg.data = spd;
+    pub.publish(msg);
+    
+    update_car_state();
+    haval->send_vehicle_control(speed_limit, throttle, brake, steer);
     ros::spinOnce();
     loop_rate.sleep();
   }
@@ -155,77 +223,89 @@ void Vehicle::can_quit()
 VCI_CloseDevice(VCI_USBCAN2,0);
 }
 
-void Vehicle::read_obstacle_info_from_sensor()
+int Vehicle::read_obstacle_info_from_sensor()
 {
     int channel_id = 0;
     VCI_CAN_OBJ rec[100];
 
     int reclen = 0;
-
+    unsigned int speed;
     if((reclen = VCI_Receive(VCI_USBCAN2,0,channel_id,rec,100,100))>0)
     {
         for(int j = 0;j<reclen;j++){
 
-#if 1
-            printf("(CAN_ID:%08X)\t=>", rec[j].ID);
-
-            for(int i = 0; i < rec[j].DataLen; i++)
-            {
-                printf(" %.2X", rec[j].Data[i]);
-            }
-            printf("\n");
-#endif
-            int current_id = rec[j].ID;
-
-            if(current_id >=0x610 && current_id <=0x62F)
-            {
-                printf("master\n");
-            }
-
-            if(current_id >=0x6B0 && current_id <=0x6CF)
-            {
-                //printf("slave\n");
-
-                float speed_x    = (((rec[j].Data[3] & 0xfe)>>1) + ((rec[j].Data[4] & 0x000f) << 8) -1024) * 0.1;
-                float speed_y    = (((rec[j].Data[4] & 0xf0)>>4) + ((rec[j].Data[5] & 0x00ef) << 8) -1024) * 0.1;
-
-            }
-
-            if(current_id == 0x601)
-            {
-#if DEBUG_RADAR
-                printf("(CAN_ID:%08X)\t=>", rec[j].ID);
-
+            if(rec[j].ID == 0x30){
                 for(int i = 0; i < rec[j].DataLen; i++)
                 {
                     printf(" %.2X", rec[j].Data[i]);
                 }
-                printf("\n");
-#endif
             }
-
-            if(current_id == 0x6FA)
-            {
-#if DEBUG_RADAR
-                printf("(CAN_ID:%08X)\t=>", rec[j].ID);
-
-                for(int i = 0; i < rec[j].DataLen; i++)
-                {
-                    printf(" %.2X", rec[j].Data[i]);
-                }
-                printf("\n");
-#endif
-            }else{
-
-            }
+            speed = (unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7]);
+            printf("speed = %d", speed);
+            return (int)speed;
         }
-    } else {
-
     }
-    //VCI_ClearBuffer(VCI_USBCAN2,0,channel_id);
 }
 
-void Vehicle::send_vehicle_steer(int cod)
+// #if 1
+//             printf("(CAN_ID:%08X)\t=>", rec[j].ID);
+
+//             for(int i = 0; i < rec[j].DataLen; i++)
+//             {
+//                 printf(" %.2X", rec[j].Data[i]);
+//             }
+//             printf("\n");
+// #endif
+//             int current_id = rec[j].ID;
+
+//             if(current_id >=0x610 && current_id <=0x62F)
+//             {
+//                 printf("master\n");
+//             }
+
+//             if(current_id >=0x6B0 && current_id <=0x6CF)
+//             {
+//                 //printf("slave\n");
+
+//                 float speed_x    = (((rec[j].Data[3] & 0xfe)>>1) + ((rec[j].Data[4] & 0x000f) << 8) -1024) * 0.1;
+//                 float speed_y    = (((rec[j].Data[4] & 0xf0)>>4) + ((rec[j].Data[5] & 0x00ef) << 8) -1024) * 0.1;
+
+//             }
+
+//             if(current_id == 0x601)
+//             {
+// #if DEBUG_RADAR
+//                 printf("(CAN_ID:%08X)\t=>", rec[j].ID);
+
+//                 for(int i = 0; i < rec[j].DataLen; i++)
+//                 {
+//                     printf(" %.2X", rec[j].Data[i]);
+//                 }
+//                 printf("\n");
+// #endif
+//             }
+
+//             if(current_id == 0x6FA)
+//             {
+// #if DEBUG_RADAR
+//                 printf("(CAN_ID:%08X)\t=>", rec[j].ID);
+
+//                 for(int i = 0; i < rec[j].DataLen; i++)
+//                 {
+//                     printf(" %.2X", rec[j].Data[i]);
+//                 }
+//                 printf("\n");
+// #endif
+//             }else{
+
+//             }
+//         }
+//     } else {
+
+//     }
+    //VCI_ClearBuffer(VCI_USBCAN2,0,channel_id);
+
+void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake, float steer)
 {
     /*
     *
@@ -247,42 +327,62 @@ void Vehicle::send_vehicle_steer(int cod)
     *
     */
 
-    if(cod == 0){
-        ROS_INFO("Nothing to do!");
-        return;
-    }
-    if(cod == 1 || cod == 4 || cod == 6){
-        ROS_INFO("Left 30!");
-        unsigned char buf[8] = {0x48,00,00,0xFE,0xD4,00,00,00};
-        can_write(0,0xE2,buf,8);
-    }
-    if(cod == 3 || cod == 5 || cod == 8){
-        ROS_INFO("Right 30!");
-        unsigned char buf[8] = {0x48,00,00,0x01,0x2C,00,00,00};
-        can_write(0,0xE2,buf,8);
+    // if(cod == 0){
+    //     ROS_INFO("Nothing to do!");
+    //     return;
+    // }
+    // if(cod == 1 || cod == 4 || cod == 6){
+    //     ROS_INFO("Left 30!");
+    //     unsigned char buf[8] = {0x48,00,00,0xFE,0xD4,00,00,00};
+    //     can_write(0,0xE2,buf,8);
+    // }
+    // if(cod == 3 || cod == 5 || cod == 8){
+    //     ROS_INFO("Right 30!");
+    //     unsigned char buf[8] = {0x48,00,00,0x01,0x2C,00,00,00};
+    //     can_write(0,0xE2,buf,8);
 
+    // }
+    // if(cod == 1 || cod == 2 || cod == 3){
+    //     ROS_INFO("Accelerate!");
+    //     unsigned char buf[8] = {0x28,0x0A,00,00,00,00,00,00};
+    //     // can_write(0,0xE2,buf,8);
+    // }
+    // if(cod == 6 || cod == 7 || cod == 8){
+    //     ROS_INFO("Brake!");
+    //     unsigned char buf[8] = {0x88,00,0x20,00,00,00,00,00};
+    //     // can_write(0,0xE2,buf,8);
+    // }
+    // if(cod > 8){
+    //     ROS_INFO("No such code!");
+    //     return;
+    // }
+
+    // ROS_INFO("speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
+
+    unsigned char buf[8] = {00,00,00,00,00,00,00,00};
+
+    //Throttle
+    if(throttle == 1){
+        unsigned int a = (unsigned int)(speed_limit * 100);
+        buf[0] = 0xD8;
+        buf[6] = (a >> 8) & 0xff;
+        buf[7] = a & 0xff;
     }
-    if(cod == 1 || cod == 2 || cod == 3){
-        ROS_INFO("Accelerate!");
-        unsigned char buf[8] = {0x28,0x0A,00,00,00,00,00,00};
-        // can_write(0,0xE2,buf,8);
-    }
-    if(cod == 6 || cod == 7 || cod == 8){
-        ROS_INFO("Brake!");
-        unsigned char buf[8] = {0x88,00,0x20,00,00,00,00,00};
-        // can_write(0,0xE2,buf,8);
-    }
-    if(cod > 8){
-        ROS_INFO("No such code!");
-        return;
+    else{
+        buf[0] = 0xC8;
     }
 
-    // // #int value = 10 * steer_slider->value();
+    //Brake
+    unsigned int b = (unsigned int)(brake * 10);
+    buf[2] = b & 0xff;
 
-    // // #buf[3] = (value>>8) & 0xff;
-    // // #buf[4] = value & 0xff;
+    //Steer
+    int value = (int)(10 * steer);
+    buf[3] = (value>>8) & 0xff;
+    buf[4] = value & 0xff;
+
     // printf("\n test 982737484 zdx   928384");
 
-    // can_write(0,0xE2,buf,8);
+    can_write(0,0xE2,buf,8);
 }
 

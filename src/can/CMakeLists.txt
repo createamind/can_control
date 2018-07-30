@@ -10,7 +10,6 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(CATKIN_DEPENDS std_msgs)
 
 include_directories(include ${catkin_INCLUDE_DIRS})
-
+link_directories(lib)
 add_executable(vehicle src/vehicle.cpp)
-target_link_libraries(vehicle ${catkin_LIBRARIES} 
-  /home/jizhi/projects/can_candy/src/can/lib/libcontrolcan.so)
+target_link_libraries(vehicle ${catkin_LIBRARIES} libcontrolcan.so)

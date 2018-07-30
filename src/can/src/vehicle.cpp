@@ -19,7 +19,7 @@ float speed_limit = 10; // KM/h
 int throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg
-
+int real_steer = 0;
 
 void chatterCallback(const std_msgs::Int16::ConstPtr& msg)
 {
@@ -240,8 +240,21 @@ int Vehicle::read_obstacle_info_from_sensor()
                     printf(" %.2X", rec[j].Data[i]);
                 }
                 speed = (unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7]);
-                printf("speed = %d", speed);
-                return (int)speed;
+                speed /= 10;
+                printf("speed = %d", (int)speed);
+            }
+
+            if(rec[j].ID == 0xA1){
+                for(int i = 0; i < rec[j].DataLen; i++)
+                {
+                    printf(" %.2X", rec[j].Data[i]);
+                }
+                real_steer = (unsigned int)(rec[j].Data[1]) << 8 + (unsigned int)(rec[j].Data[2]);
+                if(real_steer % 2 == 1){
+                    real_steer *= -1;
+                }
+                real_steer /= 10;
+                printf("real_steer = %d", real_steer);
             }
         }
     }
@@ -357,7 +370,7 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
     //     return;
     // }
 
-    // ROS_INFO("speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
+    ROS_INFO("speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
 

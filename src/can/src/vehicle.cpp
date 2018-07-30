@@ -241,7 +241,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 }
                 speed = (unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7]);
                 speed /= 10;
-                printf("speed = %d", (int)speed);
+                printf("10xspeed = %d", (int)((unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7])));
             }
 
             if(rec[j].ID == 0xA1){

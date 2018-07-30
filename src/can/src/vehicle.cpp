@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     short spd = (short)(haval->read_obstacle_info_from_sensor());
     msg.data = spd;
     pub.publish(msg);
-    steer = real_steer
+    steer = real_steer;
     update_car_state();
     haval->send_vehicle_control(speed_limit, throttle, brake, steer);
     ros::spinOnce();

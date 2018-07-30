@@ -241,7 +241,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 }
                 speed = ((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7]);
                 speed /= 10;
-                printf("10xspeed = %d", (int)(((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])));
+                printf("speed = %d\n", (int)(speed));
             }
 
             if(rec[j].ID == 0xA1){
@@ -253,8 +253,8 @@ int Vehicle::read_obstacle_info_from_sensor()
                 if(real_steer % 2 == 1){
                     real_steer *= -1;
                 }
-                real_steer /= 10;
-                printf("real_steer = %d", real_steer);
+                real_steer /= 20;
+                printf("real_steer = %d\n", real_steer);
             }
         }
     }
@@ -370,7 +370,7 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
     //     return;
     // }
 
-    ROS_INFO("speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
+    // ROS_INFO("speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
 
@@ -396,6 +396,6 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
 
     // printf("\n test 982737484 zdx   928384");
 
-    can_write(0,0xE2,buf,8);
+    // can_write(0,0xE2,buf,8);
 }
 

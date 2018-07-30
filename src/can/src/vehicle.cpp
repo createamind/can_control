@@ -15,7 +15,7 @@ Vehicle * haval = new Vehicle;
 int cod = 0;
 int cnt = 0;
 
-float speed_limit = 10; // KM/h
+float speed_limit = 20; // KM/h
 int throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg

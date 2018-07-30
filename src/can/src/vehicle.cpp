@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     short spd = (short)(haval->read_obstacle_info_from_sensor());
     msg.data = spd;
     pub.publish(msg);
-
+    steer = real_steer
     update_car_state();
     haval->send_vehicle_control(speed_limit, throttle, brake, steer);
     ros::spinOnce();
@@ -235,20 +235,20 @@ int Vehicle::read_obstacle_info_from_sensor()
         for(int j = 0;j<reclen;j++){
 
             if(rec[j].ID == 0x30){
-                for(int i = 0; i < rec[j].DataLen; i++)
-                {
-                    printf(" %.2X", rec[j].Data[i]);
-                }
+                // for(int i = 0; i < rec[j].DataLen; i++)
+                // {
+                //     printf(" %.2X", rec[j].Data[i]);
+                // }
                 speed = ((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7]);
                 speed /= 10;
                 printf("speed = %d\n", (int)(speed));
             }
 
             if(rec[j].ID == 0xA1){
-                for(int i = 0; i < rec[j].DataLen; i++)
-                {
-                    printf(" %.2X", rec[j].Data[i]);
-                }
+                // for(int i = 0; i < rec[j].DataLen; i++)
+                // {
+                //     printf(" %.2X", rec[j].Data[i]);
+                // }
                 real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
                 if(real_steer % 2 == 1){
                     real_steer *= -1;
@@ -370,7 +370,7 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
     //     return;
     // }
 
-    // ROS_INFO("speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
+    ROS_INFO("Goal: speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
 
@@ -396,6 +396,6 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
 
     // printf("\n test 982737484 zdx   928384");
 
-    // can_write(0,0xE2,buf,8);
+    can_write(0,0xE2,buf,8);
 }
 

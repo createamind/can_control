@@ -239,9 +239,9 @@ int Vehicle::read_obstacle_info_from_sensor()
                 {
                     printf(" %.2X", rec[j].Data[i]);
                 }
-                speed = (unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7]);
+                speed = ((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7]);
                 speed /= 10;
-                printf("10xspeed = %d", (int)((unsigned int)(rec[j].Data[6]) << 8 + (unsigned int)(rec[j].Data[7])));
+                printf("10xspeed = %d", (int)(((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])));
             }
 
             if(rec[j].ID == 0xA1){
@@ -249,7 +249,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 {
                     printf(" %.2X", rec[j].Data[i]);
                 }
-                real_steer = (unsigned int)(rec[j].Data[1]) << 8 + (unsigned int)(rec[j].Data[2]);
+                real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
                 if(real_steer % 2 == 1){
                     real_steer *= -1;
                 }

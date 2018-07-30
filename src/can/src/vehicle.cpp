@@ -15,7 +15,7 @@ Vehicle * haval = new Vehicle;
 int cod = 0;
 int cnt = 0;
 
-float speed_limit = 20; // KM/h
+float speed_limit = 25; // KM/h
 int throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg
@@ -38,8 +38,8 @@ void update_car_state(){
     }
     if(cod == 10){
         speed_limit += 1.0 / 100;
-        if(speed_limit > 20){
-            speed_limit = 20;
+        if(speed_limit > 25){
+            speed_limit = 25;
         }
         // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
     }

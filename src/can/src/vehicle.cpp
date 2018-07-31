@@ -326,6 +326,20 @@ int Vehicle::read_obstacle_info_from_sensor()
                 real_steer /= 20;
                 printf("real_steer = %d\n", real_steer);
             }
+            if(rec[j].ID == 0x36){
+                int tmp = 0;
+                tmp = ((rec[j].Data[0] >> 2) & 3);
+                if(tmp == 0){
+                    printf("mode = Manual\n");
+                }
+                else if(tmp == 1){
+                    printf("mode = Auto\n");
+                }
+                else if(tmp == 2){
+                    printf("mode = Exiting auto\n");
+                }
+            }
+
         }
     }
     return speed;

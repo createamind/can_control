@@ -15,7 +15,7 @@ Vehicle * haval = new Vehicle;
 int cod = 0;
 int cnt = 0;
 
-float speed_limit = 25; // KM/h
+float speed_limit = 20; // KM/h
 int throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg
@@ -25,6 +25,58 @@ void chatterCallback(const std_msgs::Int16::ConstPtr& msg)
 {
     cod = (int)(msg->data);
     cnt = 0;
+}
+
+
+void update_car_state4(){
+    // Throttle
+    if(cod == 1 || cod == 2 || cod == 3){
+        throttle = 1;
+    }
+    else{
+        throttle = 0;
+    }
+
+    if(cod == 4){
+        if(brake < 0.8){
+            brake = 0.8;
+        }
+        brake += 0.8 / 100;
+        if(brake > 3.2){
+            brake = 3.2;
+        }
+    }
+    else{
+        brake = 0;
+    }
+
+
+    if(cod == 1){
+        steer_speed += 30.0 / 100;
+        if(steer_speed > 120){
+            steer_speed = 120;
+        }
+        steer += steer_speed / 100;
+    }
+    else{
+        steer_speed = 60.0;
+        if(steer > 0)
+            steer -= 60.0 / 100;
+    }
+
+    if(cod == 3){
+        steer_speed += 30.0 / 100;
+        if(steer_speed > 120){
+            steer_speed = 120;
+        }
+        steer -= steer_speed / 100;
+    }
+    else{
+        steer_speed = 60.0;
+        if(steer < 0){
+            steer += 60.0 / 100;
+        }
+    }
 }
 
 void update_car_state(){
@@ -53,6 +105,9 @@ void update_car_state(){
     }
 
     if(cod == 6 || cod == 7 || cod == 8){
+        if(brake < 0.8){
+            brake = 0.8;
+        }
         brake += 0.8 / 100;
         if(brake > 3.2){
             brake = 3.2;
@@ -64,17 +119,27 @@ void update_car_state(){
 
 
     if(cod == 1 || cod == 4 || cod == 6){
-        steer += 60.0 / 100;
+        steer_speed += 30.0 / 100;
+        if(steer_speed > 120){
+            steer_speed = 120;
+        }
+        steer += steer_speed / 100;
     }
     else{
+        steer_speed = 60.0;
         if(steer > 0)
             steer -= 60.0 / 100;
     }
 
     if(cod == 3 || cod == 5 || cod == 8){
-        steer -= 60.0 / 100;
+        steer_speed += 30.0 / 100;
+        if(steer_speed > 120){
+            steer_speed = 120;
+        }
+        steer -= steer_speed / 100;
     }
     else{
+        steer_speed = 60.0;
         if(steer < 0){
             steer += 60.0 / 100;
         }
@@ -114,7 +179,8 @@ int main(int argc, char **argv)
     first_time = 0;
     msg.data = spd;
     pub.publish(msg);
-    update_car_state();
+    // update_car_state();
+    update_car_state4();
     haval->send_vehicle_control(speed_limit, throttle, brake, steer);
     ros::spinOnce();
     loop_rate.sleep();

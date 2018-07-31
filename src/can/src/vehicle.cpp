@@ -160,7 +160,7 @@ int main(int argc, char **argv)
   ros::Publisher pub = n.advertise<std_msgs::Int16>("/speed", 1);
 
   haval->can_open();
-  haval->can_start(1);
+  haval->can_start(0);
   int first_time = 1;
   while (ros::ok())
   {
@@ -327,6 +327,7 @@ int Vehicle::read_obstacle_info_from_sensor()
             }
         }
     }
+    return speed;
 }
 
 // #if 1

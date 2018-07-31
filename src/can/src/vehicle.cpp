@@ -20,6 +20,7 @@ int throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg
 int real_steer = 0;
+float steer_speed = 60.0;
 
 void chatterCallback(const std_msgs::Int16::ConstPtr& msg)
 {
@@ -446,6 +447,7 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
 
     //Throttle
     if(throttle == 1){
+        assert(speed_limit >= 0 && speed_limit <= 50);
         unsigned int a = (unsigned int)(speed_limit * 100);
         buf[0] = 0xD8;
         buf[6] = (a >> 8) & 0xff;
@@ -456,10 +458,12 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
     }
 
     //Brake
+    assert(brake >= 0 && brake <= 3.2);
     unsigned int b = (unsigned int)(brake * 10);
     buf[2] = b & 0xff;
 
     //Steer
+    assert(steer >= -540 && steer <= 540);
     int value = (int)(10 * steer);
     buf[3] = (value>>8) & 0xff;
     buf[4] = value & 0xff;

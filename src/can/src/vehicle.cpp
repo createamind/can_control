@@ -31,7 +31,7 @@ void chatterCallback(const std_msgs::Int16::ConstPtr& msg)
 
 void update_car_state4(){
     // Throttle
-    if(cod == 1 || cod == 2 || cod == 3){
+    if(cod == 2 || cod == 2 || cod == 2){
         throttle = 1;
     }
     else{
@@ -51,32 +51,27 @@ void update_car_state4(){
         brake = 0;
     }
 
-
+    printf("steer_speed=%.2f \n", steer_speed);
     if(cod == 1){
-        steer_speed += 30.0 / 100;
-        if(steer_speed > 120){
-            steer_speed = 120;
+        steer_speed += 90.0 / 100;
+	if(steer_speed > 270){
+            steer_speed = 270;
         }
         steer += steer_speed / 100;
     }
-    else{
-        steer_speed = 60.0;
-        if(steer > 0)
-            steer -= 60.0 / 100;
-    }
-
-    if(cod == 3){
-        steer_speed += 30.0 / 100;
-        if(steer_speed > 120){
-            steer_speed = 120;
+    else if(cod == 3){
+        steer_speed += 90.0 / 100;
+        if(steer_speed > 270){
+            steer_speed = 270;
         }
         steer -= steer_speed / 100;
     }
     else{
         steer_speed = 60.0;
-        if(steer < 0){
-            steer += 60.0 / 100;
-        }
+        if(steer > 0)
+            steer -= 60.0 / 100;
+	if(steer < 0)
+	    steer += 60.0 / 100;
     }
 }
 
@@ -98,7 +93,7 @@ void update_car_state(){
     }
 
     // Throttle
-    if(cod == 1 || cod == 2 || cod == 3){
+    if(cod == 2 || cod == 2 || cod == 2){
         throttle = 1;
     }
     else{
@@ -162,7 +157,7 @@ int main(int argc, char **argv)
 
   haval->can_open();
   haval->can_start(0);
-  int first_time = 1;
+  int first_time = 10;
   while (ros::ok())
   {
     // ROS_INFO("Now code: [%d]", cod);
@@ -174,10 +169,10 @@ int main(int argc, char **argv)
     std_msgs::Int16 msg;
 
     short spd = (short)(haval->read_obstacle_info_from_sensor());
-    if(first_time == 1){
+    if(first_time > 0){
         steer = real_steer;
+	first_time --;
     }
-    first_time = 0;
     msg.data = spd;
     pub.publish(msg);
     // update_car_state();
@@ -477,7 +472,11 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
     buf[2] = b & 0xff;
 
     //Steer
-    assert(steer >= -540 && steer <= 540);
+    if(steer < -540)
+	steer = -540;
+    if(steer > 540)
+	steer = 540;
+
     int value = (int)(10 * steer);
     buf[3] = (value>>8) & 0xff;
     buf[4] = value & 0xff;

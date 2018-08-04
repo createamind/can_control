@@ -161,10 +161,10 @@ int main(int argc, char **argv)
   while (ros::ok())
   {
     // ROS_INFO("Now code: [%d]", cod);
-    cnt += 1;
-    if(cnt > 100){
+    if(cnt<100)
+        cnt ++;
+    else
         cod = 0;
-    }
 
     std_msgs::Int16 msg;
 

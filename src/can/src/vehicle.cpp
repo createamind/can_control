@@ -496,7 +496,7 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
     buf[0] = 0xE8;
 
     //Throttle
-    if(throttle > 0.01){
+    if(throttle > 0.01 && real_speed < 25){
         assert(throttle <= 0.16);
         unsigned int a = (unsigned int)(throttle * 100);
         buf[1] = a & 0xff;

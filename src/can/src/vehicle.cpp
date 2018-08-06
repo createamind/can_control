@@ -27,6 +27,8 @@ float to_brake = 0; //MPa
 
 float real_steer = 0;
 float real_speed = 0;
+float real_brake = 0;
+float real_throttle = 0;
 
 float steer_speed = 60.0;
 
@@ -175,6 +177,7 @@ int main(int argc, char **argv)
 
   ros::Publisher pub_speed = n.advertise<std_msgs::Float32>("/current_speed", 1);
   ros::Publisher pub_steer = n.advertise<std_msgs::Float32>("/current_steer", 1);
+  ros::Publisher pub_brake_throttle = n.advertise<std_msgs::Float32>("/current_brake_throttle", 1);
 
   haval->can_open();
   haval->can_start(0);
@@ -198,13 +201,20 @@ int main(int argc, char **argv)
     }
 
 
-    std_msgs::Float32 msg;
-    msg.data = real_speed;
-    pub_speed.publish(msg);
+    std_msgs::Float32 msg1;
+    msg1.data = real_speed;
+    pub_speed.publish(msg1);
 
     std_msgs::Float32 msg2;
-    msg2.data = real_steer;
+    msg2.data = real_steer / 540.0;
     pub_steer.publish(msg2);
+
+    std_msgs::Float32 msg3;
+    if(real_brake > 0.01)
+        msg3.data = - real_brake / 3.2;
+    else
+        msg3.data = real_throttle * 7.0;
+    pub_brake_throttle.publish(msg3);
 
     update_car_state();
     haval->send_vehicle_control(throttle, brake, steer);
@@ -334,7 +344,9 @@ int Vehicle::read_obstacle_info_from_sensor()
                 //     printf(" %.2X", rec[j].Data[i]);
                 // }
                 real_speed = (((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])) / 10.0;
-                printf("real_speed = %.2f\n", real_speed);
+                real_throttle = (unsigned int)(rec[j].Data[5]) / 100.0;
+                real_brake = (unsigned int)(rec[j].Data[3]) / 10.0;
+                printf("real_speed = %.2f real_throttle = %.2f real_brake = %.2f\n", real_speed, real_throttle, real_brake);
             }
 
             if(rec[j].ID == 0xA1){

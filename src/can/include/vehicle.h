@@ -9,7 +9,7 @@ class Vehicle
 {
 public:
     int read_obstacle_info_from_sensor();
-    void send_vehicle_control(float speed_limit, int throttle, float brake, float steer);
+    void send_vehicle_control(float throttle, float brake, float steer);
 
 public:
 

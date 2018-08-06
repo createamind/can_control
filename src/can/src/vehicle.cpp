@@ -37,7 +37,7 @@ void update_steer(const std_msgs::Float32::ConstPtr& msg)
 }
 void update_throttle(const std_msgs::Float32::ConstPtr& msg)
 {
-    tmp = (float)(msg->data);
+    float tmp = (float)(msg->data);
     if(tmp > 0){
         to_brake = 0;
         to_throttle = tmp / 7;
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
     }
 
 
-    short spd = (short)(haval->read_obstacle_info_from_sensor());
+    short notused = (short)(haval->read_obstacle_info_from_sensor());
     if(first_time > 0){
         steer = real_steer;
 	first_time --;
@@ -342,7 +342,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 // {
                 //     printf(" %.2X", rec[j].Data[i]);
                 // }
-                tmp_real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
+                unsigned int tmp_real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
                 if(tmp_real_steer % 2 == 1){
                     tmp_real_steer *= -1;
                 }
@@ -365,7 +365,7 @@ int Vehicle::read_obstacle_info_from_sensor()
 
         }
     }
-    return speed;
+    return 0;
 }
 
 // #if 1

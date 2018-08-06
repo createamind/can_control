@@ -1,7 +1,7 @@
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include "std_msgs/Int16.h"
+#include "std_msgs/Float32.h"
 
 
 #include <math.h>
@@ -15,132 +15,150 @@ Vehicle * haval = new Vehicle;
 int cod = 0;
 int cnt = 0;
 
-float speed_limit = 20; // KM/h
-int throttle = 0; //0 or 1
+// float speed_limit = 20; // KM/h
+
+float throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg
-int real_steer = 0;
+
+float to_steer = 0; //Deg
+float to_throttle = 0; //km/h
+float to_brake = 0; //MPa
+
+float real_steer = 0;
+float real_speed = 0;
+
 float steer_speed = 60.0;
 
-void chatterCallback(const std_msgs::Int16::ConstPtr& msg)
+void update_steer(const std_msgs::Float32::ConstPtr& msg)
 {
-    cod = (int)(msg->data);
+    to_steer = (float)(msg->data) * 540;
+    cnt = 0;
+}
+void update_throttle(const std_msgs::Float32::ConstPtr& msg)
+{
+    tmp = (float)(msg->data);
+    if(tmp > 0){
+        to_brake = 0;
+        to_throttle = tmp / 7;
+    }
+    else if(tmp < 0){
+        to_brake = (-tmp) * 3.2;
+        to_throttle = 0;
+    }
     cnt = 0;
 }
 
 
-void update_car_state4(){
+void update_car_state(){
     // Throttle
-    if(cod == 2 || cod == 2 || cod == 2){
-        throttle = 1;
+
+    if(throttle < to_throttle){
+        if(throttle < 0.05 && to_throttle > 0.05){
+            throttle = 0.05;
+        }
+        throttle += 0.05 / 100;
     }
     else{
-        throttle = 0;
+        throttle = to_throttle;
     }
 
-    if(cod == 4){
-        if(brake < 0.8){
+    if(brake < to_brake){
+        if(brake < 0.8 && to_brake > 0.8){
             brake = 0.8;
         }
         brake += 0.8 / 100;
-        if(brake > 3.2){
-            brake = 3.2;
-        }
     }
     else{
-        brake = 0;
+        brake = to_brake;
     }
 
     printf("steer_speed=%.2f \n", steer_speed);
-    if(cod == 1){
-        steer_speed += 90.0 / 100;
-	if(steer_speed > 270){
-            steer_speed = 270;
+    if(steer < to_steer - 0.5){
+        steer_speed += 70.0 / 100;
+	    if(steer_speed > 210){
+            steer_speed = 210;
         }
         steer += steer_speed / 100;
     }
-    else if(cod == 3){
-        steer_speed += 90.0 / 100;
-        if(steer_speed > 270){
-            steer_speed = 270;
+    else if(steer > to_steer + 0.5){
+        steer_speed += 70.0 / 100;
+	    if(steer_speed > 210){
+            steer_speed = 210;
         }
-        steer -= steer_speed / 100;
+        steer -= steer_speed / 100;   
     }
     else{
-        steer_speed = 60.0;
-        if(steer > 0)
-            steer -= 60.0 / 100;
-	if(steer < 0)
-	    steer += 60.0 / 100;
+        steer_speed = 70.0;
     }
 }
 
-void update_car_state(){
+// void update_car_state(){
 
-    if(cod == 9){
-        speed_limit -= 1.0 / 100;
-        if(speed_limit < 5){
-            speed_limit = 5;
-        }
-        // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
-    }
-    if(cod == 10){
-        speed_limit += 1.0 / 100;
-        if(speed_limit > 25){
-            speed_limit = 25;
-        }
-        // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
-    }
+//     if(cod == 9){
+//         speed_limit -= 1.0 / 100;
+//         if(speed_limit < 5){
+//             speed_limit = 5;
+//         }
+//         // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
+//     }
+//     if(cod == 10){
+//         speed_limit += 1.0 / 100;
+//         if(speed_limit > 25){
+//             speed_limit = 25;
+//         }
+//         // ROS_INFO('SPEED_LIMIT: %.2f', speed_limit);
+//     }
 
-    // Throttle
-    if(cod == 2 || cod == 2 || cod == 2){
-        throttle = 1;
-    }
-    else{
-        throttle = 0;
-    }
+//     // Throttle
+//     if(cod == 2 || cod == 2 || cod == 2){
+//         throttle = 1;
+//     }
+//     else{
+//         throttle = 0;
+//     }
 
-    if(cod == 6 || cod == 7 || cod == 8){
-        if(brake < 0.8){
-            brake = 0.8;
-        }
-        brake += 0.8 / 100;
-        if(brake > 3.2){
-            brake = 3.2;
-        }
-    }
-    else{
-        brake = 0;
-    }
+//     if(cod == 6 || cod == 7 || cod == 8){
+//         if(brake < 0.8){
+//             brake = 0.8;
+//         }
+//         brake += 0.8 / 100;
+//         if(brake > 3.2){
+//             brake = 3.2;
+//         }
+//     }
+//     else{
+//         brake = 0;
+//     }
 
 
-    if(cod == 1 || cod == 4 || cod == 6){
-        steer_speed += 30.0 / 100;
-        if(steer_speed > 120){
-            steer_speed = 120;
-        }
-        steer += steer_speed / 100;
-    }
-    else{
-        steer_speed = 60.0;
-        if(steer > 0)
-            steer -= 60.0 / 100;
-    }
+//     if(cod == 1 || cod == 4 || cod == 6){
+//         steer_speed += 30.0 / 100;
+//         if(steer_speed > 120){
+//             steer_speed = 120;
+//         }
+//         steer += steer_speed / 100;
+//     }
+//     else{
+//         steer_speed = 60.0;
+//         if(steer > 0)
+//             steer -= 60.0 / 100;
+//     }
 
-    if(cod == 3 || cod == 5 || cod == 8){
-        steer_speed += 30.0 / 100;
-        if(steer_speed > 120){
-            steer_speed = 120;
-        }
-        steer -= steer_speed / 100;
-    }
-    else{
-        steer_speed = 60.0;
-        if(steer < 0){
-            steer += 60.0 / 100;
-        }
-    }
-}
+//     if(cod == 3 || cod == 5 || cod == 8){
+//         steer_speed += 30.0 / 100;
+//         if(steer_speed > 120){
+//             steer_speed = 120;
+//         }
+//         steer -= steer_speed / 100;
+//     }
+//     else{
+//         steer_speed = 60.0;
+//         if(steer < 0){
+//             steer += 60.0 / 100;
+//         }
+//     }
+// }
 
 
 int main(int argc, char **argv)
@@ -152,8 +170,11 @@ int main(int argc, char **argv)
 
   ros::Rate loop_rate(100);
 
-  ros::Subscriber sub = n.subscribe("/control", 1, chatterCallback);
-  ros::Publisher pub = n.advertise<std_msgs::Int16>("/speed", 1);
+  ros::Subscriber sub_throttle = n.subscribe("/ferrari_throttle", 1, update_throttle);
+  ros::Subscriber sub_steer = n.subscribe("/ferrari_steer", 1, update_steer);
+
+  ros::Publisher pub_speed = n.advertise<std_msgs::Float32>("/current_speed", 1);
+  ros::Publisher pub_steer = n.advertise<std_msgs::Float32>("/current_steer", 1);
 
   haval->can_open();
   haval->can_start(0);
@@ -163,21 +184,30 @@ int main(int argc, char **argv)
     // ROS_INFO("Now code: [%d]", cod);
     if(cnt<100)
         cnt ++;
-    else
-        cod = 0;
+    else{
+        to_throttle = 0;
+        to_brake = 0;
+        to_steer = 0;
+    }
 
-    std_msgs::Int16 msg;
 
     short spd = (short)(haval->read_obstacle_info_from_sensor());
     if(first_time > 0){
         steer = real_steer;
 	first_time --;
     }
-    msg.data = spd;
-    pub.publish(msg);
-    // update_car_state();
-    update_car_state4();
-    haval->send_vehicle_control(speed_limit, throttle, brake, steer);
+
+
+    std_msgs::Float32 msg;
+    msg.data = real_speed;
+    pub_speed.publish(msg);
+
+    std_msgs::Float32 msg2;
+    msg2.data = real_steer;
+    pub_steer.publish(msg2);
+
+    update_car_state();
+    haval->send_vehicle_control(throttle, brake, steer);
     ros::spinOnce();
     loop_rate.sleep();
   }
@@ -294,7 +324,6 @@ int Vehicle::read_obstacle_info_from_sensor()
     VCI_CAN_OBJ rec[100];
 
     int reclen = 0;
-    unsigned int speed;
     if((reclen = VCI_Receive(VCI_USBCAN2,0,channel_id,rec,100,100))>0)
     {
         for(int j = 0;j<reclen;j++){
@@ -304,9 +333,8 @@ int Vehicle::read_obstacle_info_from_sensor()
                 // {
                 //     printf(" %.2X", rec[j].Data[i]);
                 // }
-                speed = ((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7]);
-                speed /= 10;
-                printf("speed = %d\n", (int)(speed));
+                real_speed = (((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])) / 10.0;
+                printf("real_speed = %.2f\n", real_speed);
             }
 
             if(rec[j].ID == 0xA1){
@@ -314,12 +342,12 @@ int Vehicle::read_obstacle_info_from_sensor()
                 // {
                 //     printf(" %.2X", rec[j].Data[i]);
                 // }
-                real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
-                if(real_steer % 2 == 1){
-                    real_steer *= -1;
+                tmp_real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
+                if(tmp_real_steer % 2 == 1){
+                    tmp_real_steer *= -1;
                 }
-                real_steer /= 20;
-                printf("real_steer = %d\n", real_steer);
+                real_steer = tmp_real_steer / 20.0;
+                printf("real_steer = %.2f\n", real_steer);
             }
             if(rec[j].ID == 0x36){
                 int tmp = 0;
@@ -398,7 +426,7 @@ int Vehicle::read_obstacle_info_from_sensor()
 //     }
     //VCI_ClearBuffer(VCI_USBCAN2,0,channel_id);
 
-void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake, float steer)
+void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
 {
     /*
     *
@@ -450,32 +478,29 @@ void Vehicle::send_vehicle_control(float speed_limit, int throttle, float brake,
     //     return;
     // }
 
-    ROS_INFO("Goal: speedlimit:%.2f throttle:%d brake:%.2f steer:%.2f", speed_limit, throttle, brake, steer);
+    ROS_INFO("Goal: throttle:%.2f brake:%.2f steer:%.2f", throttle, brake, steer);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
+    buf[0] = 0xE8;
 
     //Throttle
-    if(throttle == 1){
-        assert(speed_limit >= 0 && speed_limit <= 50);
-        unsigned int a = (unsigned int)(speed_limit * 100);
-        buf[0] = 0xD8;
-        buf[6] = (a >> 8) & 0xff;
-        buf[7] = a & 0xff;
-    }
-    else{
-        buf[0] = 0xC8;
+    if(throttle > 0.01){
+        assert(throttle <= 0.16);
+        unsigned int a = (unsigned int)(throttle * 100);
+        buf[1] = a & 0xff;
     }
 
-    //Brake
-    assert(brake >= 0 && brake <= 3.2);
-    unsigned int b = (unsigned int)(brake * 10);
-    buf[2] = b & 0xff;
+    if(brake > 0.1){
+        assert(brake <= 3.3);
+        unsigned int b = (unsigned int)(brake * 10);
+        buf[2] = b & 0xff;
+    }
 
     //Steer
     if(steer < -540)
-	steer = -540;
+	    steer = -540;
     if(steer > 540)
-	steer = 540;
+	    steer = 540;
 
     int value = (int)(10 * steer);
     buf[3] = (value>>8) & 0xff;

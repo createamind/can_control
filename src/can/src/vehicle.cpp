@@ -44,7 +44,7 @@ void update_throttle(const std_msgs::Float32::ConstPtr& msg)
         to_brake = 0;
         to_throttle = tmp / 7;
     }
-    else if(tmp < 0){
+    else{
         to_brake = (-tmp) * 3.2;
         to_throttle = 0;
     }

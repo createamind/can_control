@@ -182,6 +182,7 @@ int main(int argc, char **argv)
   haval->can_open();
   haval->can_start(0);
   int first_time = 10;
+  float former_speed = 0;
   while (ros::ok())
   {
     // ROS_INFO("Now code: [%d]", cod);
@@ -197,7 +198,8 @@ int main(int argc, char **argv)
     short notused = (short)(haval->read_obstacle_info_from_sensor());
     if(first_time > 0){
         steer = real_steer;
-	first_time --;
+        former_speed = real_speed;
+	    first_time --;
     }
 
 
@@ -210,11 +212,13 @@ int main(int argc, char **argv)
     pub_steer.publish(msg2);
 
     std_msgs::Float32 msg3;
+    printf("estimated throttle = %.2lf", min(0.15, max(real_speed - former_speed, 0)))
     if(real_brake > 0.01)
         msg3.data = - real_brake / 3.2;
     else
         msg3.data = real_throttle * 7.0;
     pub_brake_throttle.publish(msg3);
+    former_speed = real_speed;
 
     update_car_state();
     haval->send_vehicle_control(throttle, brake, steer);
@@ -346,7 +350,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 real_speed = (((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])) / 10.0;
                 real_throttle = (unsigned int)(rec[j].Data[5]) / 100.0;
                 real_brake = (unsigned int)(rec[j].Data[3]) / 10.0;
-                printf("real_speed = %.2f real_throttle = %.2f real_brake = %.2f\n", real_speed, real_throttle, real_brake);
+                printf(" real_speed = %.2f real_throttle = %.2f real_brake = %.2f \n", real_speed, real_throttle, real_brake);
             }
 
             if(rec[j].ID == 0xA1){
@@ -354,7 +358,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 // {
                 //     printf(" %.2X", rec[j].Data[i]);
                 // }
-                unsigned int tmp_real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
+                int tmp_real_steer = ((unsigned int)(rec[j].Data[1]) << 8) + (unsigned int)(rec[j].Data[2]);
                 if(tmp_real_steer % 2 == 1){
                     tmp_real_steer *= -1;
                 }

@@ -353,10 +353,12 @@ int Vehicle::read_obstacle_info_from_sensor()
         for(int j = 0;j<reclen;j++){
 
             if(rec[j].ID == 0x30){
-                // for(int i = 0; i < rec[j].DataLen; i++)
-                // {
-                //     printf(" %.2X", rec[j].Data[i]);
-                // }
+		printf("ID=0x30:\n");
+                for(int i = 0; i < rec[j].DataLen; i++)
+                {
+                    printf(" %.2X", rec[j].Data[i]);
+                }
+		printf("\n");
                 real_speed = (((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])) / 10.0;
                 real_throttle = (unsigned int)(rec[j].Data[5]) / 100.0;
                 real_brake = (unsigned int)(rec[j].Data[3]) / 10.0;

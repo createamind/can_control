@@ -2,6 +2,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Float32.h"
+#include "std_msgs/Int16.h"
 
 
 #include <math.h>
@@ -34,6 +35,8 @@ float real_brake = 0;
 float real_throttle = 0;
 
 float steer_speed = 60.0;
+
+int is_auto = 1;
 
 void update_steer(const std_msgs::Float32::ConstPtr& msg)
 {
@@ -181,6 +184,7 @@ int main(int argc, char **argv)
   ros::Publisher pub_speed = n.advertise<std_msgs::Float32>("/current_speed", 1);
   ros::Publisher pub_steer = n.advertise<std_msgs::Float32>("/current_steer", 1);
   ros::Publisher pub_brake_throttle = n.advertise<std_msgs::Float32>("/current_brake_throttle", 1);
+  ros::Publisher pub_is_auto = n.advertise<std_msgs::Int16>("/current_is_auto", 1);
 
   haval->can_open();
   haval->can_start(0);
@@ -219,12 +223,17 @@ int main(int argc, char **argv)
     pub_steer.publish(msg2);
 
     std_msgs::Float32 msg3;
-    real_throttle = min(0.15, max(real_speed - former_speed.front(), 0));
+    // real_throttle = min(0.15, max(real_speed - former_speed.front(), 0));
     if(real_brake > 0.01)
         msg3.data = - real_brake / 3.2;
     else
         msg3.data = real_throttle * 7.0;
     pub_brake_throttle.publish(msg3);
+
+    std_msgs::Int16 msg4;
+    msg4.data = is_auto;
+    pub_is_auto.publish(msg4);
+    
 
     former_speed.push_back(real_speed);
     if(former_speed.size() > interval)
@@ -353,16 +362,15 @@ int Vehicle::read_obstacle_info_from_sensor()
         for(int j = 0;j<reclen;j++){
 
             if(rec[j].ID == 0x30){
-		printf("ID=0x30:\n");
-                for(int i = 0; i < rec[j].DataLen; i++)
-                {
-                    printf(" %.2X", rec[j].Data[i]);
-                }
-		printf("\n");
+                // printf("ID=0x30:\n");
+                //         for(int i = 0; i < rec[j].DataLen; i++)
+                //         {
+                //             printf(" %.2X", rec[j].Data[i]);
+                //         }
+                // printf("\n");
                 real_speed = (((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])) / 10.0;
-                real_throttle = (unsigned int)(rec[j].Data[5]) / 100.0;
                 real_brake = (unsigned int)(rec[j].Data[3]) / 10.0;
-                printf(" real_speed = %.2f real_throttle = %.2f real_brake = %.2f \n", real_speed, real_throttle, real_brake);
+                printf(" real_speed = %.2f real_brake = %.2f \n", real_speed, real_brake);
             }
 
             if(rec[j].ID == 0xA1){
@@ -381,14 +389,21 @@ int Vehicle::read_obstacle_info_from_sensor()
                 int tmp = 0;
                 tmp = ((rec[j].Data[0] >> 2) & 3);
                 if(tmp == 0){
+                    is_auto = 0;
                     printf("mode = Manual\n");
                 }
                 else if(tmp == 1){
+                    is_auto = 1;
                     printf("mode = Auto\n");
                 }
                 else if(tmp == 2){
+                    is_auto = 0;
                     printf("mode = Exiting auto\n");
                 }
+            }
+            if(rec[j].ID == 0x101){
+                real_throttle = (unsigned int)(rec[j].Data[2]) * 0.4 / 100;
+                printf("real_throttle = %.2f \n", real_throttle);
             }
 
         }

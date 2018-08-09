@@ -51,7 +51,7 @@ void update_throttle(const std_msgs::Float32::ConstPtr& msg)
         to_throttle = tmp / 7;
     }
     else{
-        to_brake = (-tmp) * 3.2;
+        to_brake = (-tmp) * 1.9;
         to_throttle = 0;
     }
     cnt = 0;
@@ -81,7 +81,7 @@ void update_car_state(){
         brake = to_brake;
     }
 
-    printf("steer_speed=%.2f \n", steer_speed);
+    //printf("steer_speed=%.2f \n", steer_speed);
     if(steer < to_steer - 0.5){
         steer_speed += 70.0 / 100;
 	    if(steer_speed > 210){
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
     std_msgs::Float32 msg3;
     // real_throttle = min(0.15, max(real_speed - former_speed.front(), 0));
     if(real_brake > 0.01)
-        msg3.data = - real_brake / 3.2;
+        msg3.data = - real_brake / 1.9;
     else
         msg3.data = real_throttle * 7.0;
     pub_brake_throttle.publish(msg3);
@@ -534,7 +534,7 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
     }
 
     if(brake > 0.1){
-        assert(brake <= 3.3);
+        assert(brake <= 2.0);
         unsigned int b = (unsigned int)(brake * 10);
         buf[2] = b & 0xff;
     }

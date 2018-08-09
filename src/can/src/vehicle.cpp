@@ -232,6 +232,7 @@ int main(int argc, char **argv)
 
     std_msgs::Int16 msg4;
     msg4.data = is_auto;
+    printf("isauto=%d", is_auto);
     pub_is_auto.publish(msg4);
     
 

@@ -48,7 +48,7 @@ void update_throttle(const std_msgs::Float32::ConstPtr& msg)
         to_throttle = tmp / 7;
     }
     else{
-        to_brake = (-tmp) * 3.2;
+        to_brake = (-tmp) * 1.9;
         to_throttle = 0;
     }
     cnt = 0;
@@ -78,7 +78,7 @@ void update_car_state(){
         brake = to_brake;
     }
 
-    printf("steer_speed=%.2f \n", steer_speed);
+    //printf("steer_speed=%.2f \n", steer_speed);
     if(steer < to_steer - 0.5){
         steer_speed += 70.0 / 100;
 	    if(steer_speed > 210){
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
     std_msgs::Float32 msg3;
     real_throttle = min(0.15, max(real_speed - former_speed.front(), 0));
     if(real_brake > 0.01)
-        msg3.data = - real_brake / 3.2;
+        msg3.data = - real_brake / 1.9;
     else
         msg3.data = real_throttle * 7.0;
     pub_brake_throttle.publish(msg3);
@@ -353,16 +353,28 @@ int Vehicle::read_obstacle_info_from_sensor()
         for(int j = 0;j<reclen;j++){
 
             if(rec[j].ID == 0x30){
-		printf("ID=0x30:\n");
-                for(int i = 0; i < rec[j].DataLen; i++)
-                {
-                    printf(" %.2X", rec[j].Data[i]);
-                }
-		printf("\n");
+		// printf("ID=0x30:\n");
+        //         for(int i = 0; i < rec[j].DataLen; i++)
+        //         {
+        //             printf(" %.2X", rec[j].Data[i]);
+        //         }
+		// printf("\n");
                 real_speed = (((unsigned int)(rec[j].Data[6]) << 8) + (unsigned int)(rec[j].Data[7])) / 10.0;
-                real_throttle = (unsigned int)(rec[j].Data[5]) / 100.0;
+               
                 real_brake = (unsigned int)(rec[j].Data[3]) / 10.0;
-                printf(" real_speed = %.2f real_throttle = %.2f real_brake = %.2f \n", real_speed, real_throttle, real_brake);
+                printf("real_speed = %.2f  real_brake = %.2f \n", real_speed,  real_brake);
+            }
+
+
+            if(rec[j].ID == 0x101){
+                // for(int i = 0; i < rec[j].DataLen; i++)
+                // {
+                //     printf(" %.2X", rec[j].Data[i]);
+                // }
+
+                real_throttle = (unsigned int)(rec[j].Data[2]) * 0.4;
+                //real_steer = tmp_real_steer / 20.0;
+                printf("real_throttle = %.2f\n", real_throttle);
             }
 
             if(rec[j].ID == 0xA1){
@@ -377,19 +389,19 @@ int Vehicle::read_obstacle_info_from_sensor()
                 real_steer = tmp_real_steer / 20.0;
                 printf("real_steer = %.2f\n", real_steer);
             }
-            if(rec[j].ID == 0x36){
-                int tmp = 0;
-                tmp = ((rec[j].Data[0] >> 2) & 3);
-                if(tmp == 0){
-                    printf("mode = Manual\n");
-                }
-                else if(tmp == 1){
-                    printf("mode = Auto\n");
-                }
-                else if(tmp == 2){
-                    printf("mode = Exiting auto\n");
-                }
-            }
+            // if(rec[j].ID == 0x36){
+            //     int tmp = 0;
+            //     tmp = ((rec[j].Data[0] >> 2) & 3);
+            //     if(tmp == 0){
+            //         printf("mode = Manual\n");
+            //     }
+            //     else if(tmp == 1){
+            //         printf("mode = Auto\n");
+            //     }
+            //     else if(tmp == 2){
+            //         printf("mode = Exiting auto\n");
+            //     }
+            // }
 
         }
     }
@@ -519,7 +531,7 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
     }
 
     if(brake > 0.1){
-        assert(brake <= 3.3);
+        assert(brake <= 2.0);
         unsigned int b = (unsigned int)(brake * 10);
         buf[2] = b & 0xff;
     }

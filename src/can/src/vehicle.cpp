@@ -34,7 +34,7 @@ float real_steer = 0;
 float real_speed = 0;
 float real_brake = 0;
 float real_throttle = 0;
-float real_brake_light = 0;
+int real_brake_light = 0;
 
 float steer_speed = 60.0;
 
@@ -307,15 +307,15 @@ int main(int argc, char **argv)
     printf("isauto=%d", is_auto);
     pub_is_auto.publish(msg4);
 
-    std_msgs::Float32 msg5;
+    std_msgs::Int16 msg5;
     msg5.data = real_brake_light;
     pub_brake_light.publish(msg5);
 
-    std_msgs::Float32 msg6;
+    std_msgs::Int16 msg6;
     msg6.data = real_left_turn_switch;
     pub_left_turn_switch.publish(msg6);
 
-    std_msgs::Float32 msg7;
+    std_msgs::Int16 msg7;
     msg7.data = real_right_turn_switch;
     pub_right_turn_switch.publish(msg7);
 
@@ -586,7 +586,7 @@ int Vehicle::read_obstacle_info_from_sensor()
 //     }
     //VCI_ClearBuffer(VCI_USBCAN2,0,channel_id);
 
-void Vehicle::send_vehicle_control(float throttle, float brake, float steer, float brake_light, float left_turn_swith, float right_turn_switch)
+void Vehicle::send_vehicle_control(float throttle, float brake, float steer, int brake_light, int left_turn_swith, int right_turn_switch)
 {
     /*
     *

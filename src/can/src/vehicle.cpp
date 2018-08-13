@@ -24,6 +24,7 @@ int cnt = 0;
 float throttle = 0; //0 or 1
 float brake = 0; //MPa
 float steer = 0; //Deg
+int brake_light = 0;
 
 float to_steer = 0; //Deg
 float to_throttle = 0; //km/h
@@ -33,8 +34,25 @@ float real_steer = 0;
 float real_speed = 0;
 float real_brake = 0;
 float real_throttle = 0;
+float real_brake_light = 0;
 
 float steer_speed = 60.0;
+
+
+// int horn = 0;
+int left_turn_switch = 0;
+int right_turn_switch = 0;
+
+int real_left_turn_switch = 0;
+int real_right_turn_switch = 0;
+
+int to_brake_light = 0;
+// float to_horn = 0;
+int to_left_turn_switch = 0;
+int to_right_turn_switch = 0;
+
+// float to_light = 0;
+// float real_light =0;
 
 int is_auto = 1;
 
@@ -55,6 +73,21 @@ void update_throttle(const std_msgs::Float32::ConstPtr& msg)
         to_throttle = 0;
     }
     cnt = 0;
+}
+
+void update_brake_light(const std_msgs::Int16::ConstPtr& msg)
+{
+    int to_brake_light = (float)(msg->data);
+}
+
+void update_left_turn_switch(const std_msgs::Int16::ConstPtr& msg)
+{
+    int to_left_turn_light = (float)(msg->data);
+}
+
+void update_right_turn_switch(const std_msgs::Int16::ConstPtr& msg)
+{
+    int to_right_turn_light = (float)(msg->data);
 }
 
 
@@ -99,6 +132,35 @@ void update_car_state(){
     else{
         steer_speed = 70.0;
     }
+
+    //灯光控制
+    /*
+    int brake_light = 0;
+    int horn = 0;
+    int left_turn_switch = 0;
+    int right_turn_switch = 0;
+    */
+    if(brake >0){
+        brake_light == 1;
+    }
+    else{
+        brake_light == 0;
+    }
+
+    if(steer > 0){
+        left_turn_switch == 1;
+        right_turn_switch == 0;
+    }
+    else if(steer < 0){
+        left_turn_switch == 0;
+        right_turn_switch == 1;
+    }
+    else if(steer = 0){
+        left_turn_switch == 0;
+        right_turn_switch == 0;
+    }
+
+    
 }
 
 // void update_car_state(){
@@ -180,11 +242,21 @@ int main(int argc, char **argv)
 
   ros::Subscriber sub_throttle = n.subscribe("/ferrari_throttle", 1, update_throttle);
   ros::Subscriber sub_steer = n.subscribe("/ferrari_steer", 1, update_steer);
+  ros::Subscriber sub_light = n.subscribe("/ferrari_brake_light", 1, update_brake_light);
+  ros::Subscriber sub_left_turn_switch = n.subscribe("/ferrari_left_turn_switch", 1, update_left_turn_switch);
+  ros::Subscriber sub_right_turn_switch = n.subscribe("/ferrari_left_turn_switch", 1, update_right_turn_switch);
+  
+  
 
   ros::Publisher pub_speed = n.advertise<std_msgs::Float32>("/current_speed", 1);
   ros::Publisher pub_steer = n.advertise<std_msgs::Float32>("/current_steer", 1);
   ros::Publisher pub_brake_throttle = n.advertise<std_msgs::Float32>("/current_brake_throttle", 1);
   ros::Publisher pub_is_auto = n.advertise<std_msgs::Int16>("/current_is_auto", 1);
+  ros::Publisher pub_brake_light = n.advertise<std_msgs::Int16>("/current_brake_light", 1);
+  ros::Publisher pub_left_turn_switch = n.advertise<std_msgs::Int16>("/current_left_turn_switch", 1);
+  ros::Publisher pub_right_turn_switch = n.advertise<std_msgs::Int16>("/current_right_turn_switch", 1);
+
+  
 
   haval->can_open();
   haval->can_start(0);
@@ -234,14 +306,25 @@ int main(int argc, char **argv)
     msg4.data = is_auto;
     printf("isauto=%d", is_auto);
     pub_is_auto.publish(msg4);
-    
+
+    std_msgs::Float32 msg5;
+    msg5.data = real_brake_light;
+    pub_brake_light.publish(msg5);
+
+    std_msgs::Float32 msg6;
+    msg6.data = real_left_turn_switch;
+    pub_left_turn_switch.publish(msg6);
+
+    std_msgs::Float32 msg7;
+    msg7.data = real_right_turn_switch;
+    pub_right_turn_switch.publish(msg7);
 
     former_speed.push_back(real_speed);
     if(former_speed.size() > interval)
         former_speed.pop_front();
 
     update_car_state();
-    haval->send_vehicle_control(throttle, brake, steer);
+    haval->send_vehicle_control(throttle, brake, steer, brake_light, left_turn_switch, right_turn_switch);
     ros::spinOnce();
     loop_rate.sleep();
   }
@@ -401,12 +484,45 @@ int Vehicle::read_obstacle_info_from_sensor()
                     is_auto = 0;
                     printf("mode = Exiting auto\n");
                 }
+
+                int tmp1 = 0;
+                tmp1 = rec[j].Data[2]>>7;
+                if(tmp1 == 0){
+                    real_brake_light = 0;
+                    printf("brake_light off\n");
+                }
+                else{
+                    real_brake_light = 1;
+                    printf("brake_light on\n");
+                }
+
+                int tmp2 = 0;
+                tmp1 = rec[j].Data[6]>>7;
+                if(tmp2 == 0){
+                    real_left_turn_switch = 0;
+                    printf("left_turn_light off\n");
+                }
+                else{
+                    real_left_turn_switch = 1;
+                    printf("left_turn_light on\n");
+                }
+
+
+                int tmp3 = 0;
+                tmp1 = rec[j].Data[7]>>7;
+                if(tmp3 == 0){
+                    real_right_turn_switch = 0;
+                    printf("right_turn_light off\n");
+                }
+                else{
+                    real_left_turn_switch = 1;
+                    printf("right_turn_light on\n");
+                }
             }
             if(rec[j].ID == 0x101){
                 real_throttle = (unsigned int)(rec[j].Data[2]) * 0.4 / 100;
                 printf("real_throttle = %.2f \n", real_throttle);
             }
-
         }
     }
     return 0;
@@ -470,7 +586,7 @@ int Vehicle::read_obstacle_info_from_sensor()
 //     }
     //VCI_ClearBuffer(VCI_USBCAN2,0,channel_id);
 
-void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
+void Vehicle::send_vehicle_control(float throttle, float brake, float steer, float brake_light, float left_turn_swith, float right_turn_switch)
 {
     /*
     *
@@ -522,7 +638,7 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
     //     return;
     // }
 
-    ROS_INFO("Goal: throttle:%.2f brake:%.2f steer:%.2f", throttle, brake, steer);
+    ROS_INFO("Goal: throttle:%.2f brake:%.2f steer:%.2f", throttle, brake, steer, brake_light, left_turn_switch, right_turn_switch);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
     buf[0] = 0xE8;
@@ -553,5 +669,36 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer)
     // printf("\n test 982737484 zdx   928384");
 
     can_write(0,0xE2,buf,8);
+
+        unsigned char buf1[8] = {00,00,00,00,00,00,00,00};
+    if(brake_light == 1){
+        buf1[1] = 0x40;
+    } 
+    else{
+        buf[1] = 0;
+    }
+    
+    // if(horn == 1){
+    //     buf1[2] = 0x40;
+    // } 
+    // else{
+    //     buf1[2] =0;
+    // }
+
+    if( left_turn_switch == 1){
+        buf1[5] = 0x40;
+    }
+    else{
+        buf1[5] = 0;
+    } 
+
+    if( right_turn_switch == 1){
+        buf1[5] = 0x40;
+    }
+    else{
+        buf1[5] = 0;
+    } 
+
+    can_write(0,0xE0,buf1,8);
 }
 

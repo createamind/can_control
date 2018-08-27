@@ -648,20 +648,18 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer, int
     //     return;
     // }
 
-
+    
     ROS_INFO("Goal: throttle:%.2f brake:%.2f steer:%.2f", throttle, brake, steer, brake_light, left_turn_switch, right_turn_switch);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
+    
     buf[0] = 0xfc;
-    // 0100 0100
-    //buf[5] = 0x44;
-    // 1000 0100
-    //buf[5] = 0X84;
-    // 0110 0100
-    //buf[5] = 0X64
-    buf[5] = 0X48;
-   
-
+    // poweron all 0100 1000  ->0x48
+    //buf[5] = 0x48;
+    // poweron camera 0100 0100 ->0x44
+    buf[5] = 0x44;
+    // poweron lidar 0100 0111 0x47
+    //buf[5] = 0x47;
 
     //Throttle
     if(throttle > 0.01 && real_speed < 20){
@@ -689,9 +687,16 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer, int
     // printf("\n test 982737484 zdx   928384");
 
     can_write(0,0xE2,buf,8);
+    
 
-    unsigned char buf1[8] = {80,80,80,00,80,80,80,80};
-    can_write(0,0xE0,buf1,8);
+    //unsigned char buf[8] = {00,00,0x20,00,00,00,00,00};
+    // poweron all 0100 1000  ->48
+    //buf[5] = 0X48;
+    
+    //can_write(0,0xE2,buf,8);
+
+    // unsigned char buf1[8] = {0x80,0x80,00,00,00,00,00,00};
+    // can_write(0,0xE0,buf1,8);
 
 
     // if(brake_light == 1){

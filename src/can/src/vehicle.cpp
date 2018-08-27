@@ -470,7 +470,17 @@ int Vehicle::read_obstacle_info_from_sensor()
                 printf("real_steer = %.2f\n", real_steer);
             }
             if(rec[j].ID == 0x36){
+                                // for(int i = 0; i < rec[j].DataLen; i++)
+                // {
+                //     printf(" %.2X", rec[j].Data[i]);
+                // }
                 int tmp = 0;
+                
+                for(int i = 0; i < rec[j].DataLen; i++)
+                {
+                    printf("%.2X", rec[j].Data[i]);
+                }
+
                 tmp = ((rec[j].Data[0] >> 2) & 3);
                 if(tmp == 0){
                     is_auto = 0;
@@ -497,7 +507,7 @@ int Vehicle::read_obstacle_info_from_sensor()
                 }
 
                 int tmp2 = 0;
-                tmp1 = rec[j].Data[6]>>7;
+                tmp2 = rec[j].Data[6]>>7;
                 if(tmp2 == 0){
                     real_left_turn_switch = 0;
                     printf("left_turn_light off\n");
@@ -509,7 +519,7 @@ int Vehicle::read_obstacle_info_from_sensor()
 
 
                 int tmp3 = 0;
-                tmp1 = rec[j].Data[7]>>7;
+                tmp3 = rec[j].Data[7]>>7;
                 if(tmp3 == 0){
                     real_right_turn_switch = 0;
                     printf("right_turn_light off\n");
@@ -638,23 +648,33 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer, int
     //     return;
     // }
 
+
     ROS_INFO("Goal: throttle:%.2f brake:%.2f steer:%.2f", throttle, brake, steer, brake_light, left_turn_switch, right_turn_switch);
 
     unsigned char buf[8] = {00,00,00,00,00,00,00,00};
-    buf[0] = 0xE8;
+    buf[0] = 0xfc;
+    // 0100 0100
+    //buf[5] = 0x44;
+    // 1000 0100
+    //buf[5] = 0X84;
+    // 0110 0100
+    //buf[5] = 0X64
+    buf[5] = 0X48;
+   
+
 
     //Throttle
-    // if(throttle > 0.01 && real_speed < 25){
-    //     assert(throttle <= 0.16);
-    //     unsigned int a = (unsigned int)(throttle * 100);
-    //     buf[1] = a & 0xff;
-    // }
+    if(throttle > 0.01 && real_speed < 20){
+        assert(throttle <= 0.16);
+        unsigned int a = (unsigned int)(throttle * 100);
+        buf[1] = a & 0xff;
+    }
 
-    // if(brake > 0.1){
-    //     assert(brake <= 2.0);
-    //     unsigned int b = (unsigned int)(brake * 10);
-    //     buf[2] = b & 0xff;
-    // }
+    if(brake > 0.1){
+        assert(brake <= 2.0);
+        unsigned int b = (unsigned int)(brake * 10);
+        buf[2] = b & 0xff;
+    }
 
     //Steer
     if(steer < -540)
@@ -670,35 +690,47 @@ void Vehicle::send_vehicle_control(float throttle, float brake, float steer, int
 
     can_write(0,0xE2,buf,8);
 
-        unsigned char buf1[8] = {00,00,00,00,00,00,00,00};
-    if(brake_light == 1){
-        buf1[1] = 0x40;
-    } 
-    else{
-        buf[1] = 0;
-    }
-    
-    // if(horn == 1){
-    //     buf1[2] = 0x40;
+    unsigned char buf1[8] = {80,80,80,00,80,80,80,80};
+    can_write(0,0xE0,buf1,8);
+
+
+    // if(brake_light == 1){
+    //     buf1[1] = 0x80;
     // } 
     // else{
-    //     buf1[2] =0;
+    //     buf[1] = 0;
     // }
+    
+    // // if(horn == 1){
+    // //     buf1[2] = 0x80;
+    // // } 
+    // // else{
+    // //     buf1[2] =0;
+    // // }
 
-    if( left_turn_switch == 1){
-        buf1[5] = 0x40;
-    }
-    else{
-        buf1[5] = 0;
-    } 
+    // if( left_turn_switch == 1){
+    //     buf1[5] = 0x80;
+    // }
+    // else{
+    //     buf1[5] = 0;
+    // } 
 
-    if( right_turn_switch == 1){
-        buf1[5] = 0x40;
-    }
-    else{
-        buf1[5] = 0;
-    } 
+    // if( right_turn_switch == 1){
+    //     buf1[6] = 0x80;
+    // }
+    // else{
+    //     buf1[6] = 0;
+    // } 
 
-    can_write(0,0xE0,buf1,8);
+    // if(steer < -540)
+	//     steer = -540;
+    // if(steer > 540)
+	//     steer = 540;
+
+    // int value = (int)(10 * steer);
+    // buf1[3] = (value>>8) & 0xff;
+    // buf1[4] = value & 0xff;
+
+    
 }
 
